@@ -436,20 +436,20 @@
     }
 
     /* Safari specific fixes */
-    @media screen and (-webkit-min-device-pixel-ratio: 0) {
-      .form-control {
-        -webkit-appearance: none;
+      @media screen and (-webkit-min-device-pixel-ratio: 0) {
+        .form-control {
+          -webkit-appearance: none;
+        }
+        
+        .btn {
+          -webkit-appearance: none;
+          -webkit-border-radius: 10px;
+        }
+        
+        .card-modern {
+          -webkit-transform: translateZ(0);
+        }
       }
-      
-      .btn {
-        -webkit-appearance: none;
-        -webkit-border-radius: 10px;
-      }
-      
-      .card-modern {
-        -webkit-transform: translateZ(0);
-      }
-    }
 
     /* Mobile Responsive Design */
     @media (max-width: 768px) {
@@ -846,10 +846,12 @@
                     <th scope="col">DatumAngle</th>
                     <th scope="col">Nozzle</th>
                     <th scope="col">TrayHeight</th>
-                    <th scope="col">Offset Num</th>
+                    <th scope="col">Offset Block Num</th>
                     <th scope="col">Offset XY</th>
-                    <th scope="col">Point</th>
-                    <th scope="col">Board</th>
+                    <th scope="col">Point For Use</th>
+                    <th scope="col">Total Point Per 1 Board</th>
+
+                    
                   </tr> 
                 </thead>
                 <tbody>
