@@ -689,6 +689,504 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
+// ACTIVE USERS DISPLAY SYSTEM
+// ==========================================
+
+class ActiveUsersManager {
+  constructor() {
+    this.activeUsers = [];
+    this.avatarColors = ['bg-blue', 'bg-green', 'bg-red', 'bg-purple', 'bg-orange', 'bg-pink'];
+    this.OFFLINE_THRESHOLD = 10 * 60 * 1000; // 10 minutes in milliseconds
+    this.init();
+  }
+
+  // Initialize the system
+  init() {
+    this.trackUserActivity();
+    this.loadAllUsers();
+    this.displayUsers();
+    
+    // Auto-refresh every 30 seconds to update status
+    setInterval(() => {
+      this.refreshUsers();
+    }, 30000);
+    
+    // Update last active time every minute
+    setInterval(() => {
+      this.updateLastActiveTime();
+    }, 60000);
+  }
+
+  // Track user activity
+  trackUserActivity() {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) return;
+
+    // Update last active time on user interaction
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, () => {
+        this.updateUserActivity(currentUser.username);
+      }, { passive: true });
+    });
+
+    // Initialize last active time
+    this.updateUserActivity(currentUser.username);
+  }
+
+  // Update user activity timestamp
+  updateUserActivity(username) {
+    const activityData = JSON.parse(localStorage.getItem('userActivity') || '{}');
+    activityData[username] = new Date().toISOString();
+    localStorage.setItem('userActivity', JSON.stringify(activityData));
+  }
+
+  // Update last active time periodically
+  updateLastActiveTime() {
+    const currentUser = this.getCurrentUser();
+    if (currentUser) {
+      this.updateUserActivity(currentUser.username);
+    }
+  }
+
+  // Get user last active time
+  getUserLastActive(username) {
+    const activityData = JSON.parse(localStorage.getItem('userActivity') || '{}');
+    return activityData[username] || null;
+  }
+
+  // Check if user is offline (inactive > 10 minutes)
+  isUserOffline(username) {
+    const lastActive = this.getUserLastActive(username);
+    if (!lastActive) return true;
+
+    const now = new Date();
+    const lastActiveDate = new Date(lastActive);
+    const diffMs = now - lastActiveDate;
+
+    return diffMs > this.OFFLINE_THRESHOLD;
+  }
+
+  // Load ALL users with status check
+  loadAllUsers() {
+    this.activeUsers = [];
+    
+    // Default users
+    const defaultUsers = [
+      { 
+        username: 'admin', 
+        email: 'admin@asi.com', 
+        fullName: 'Admin User',
+        loginTime: new Date(Date.now() - 1800000).toISOString()
+      },
+      { 
+        username: 'user', 
+        email: 'user@asi.com', 
+        fullName: 'Regular User',
+        loginTime: new Date(Date.now() - 3600000).toISOString()
+      },
+      { 
+        username: 'demo', 
+        email: 'demo@asi.com', 
+        fullName: 'Demo User',
+        loginTime: new Date(Date.now() - 7200000).toISOString()
+      }
+    ];
+
+    // Get all registered users from localStorage
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    
+    // Add login time to registered users
+    const registeredWithTime = registeredUsers.map(user => ({
+      ...user,
+      loginTime: user.registeredAt || new Date(Date.now() - Math.random() * 86400000).toISOString()
+    }));
+
+    // Get current logged-in user
+    const currentUser = this.getCurrentUser();
+
+    // Combine all users
+    let allUsers = [...defaultUsers, ...registeredWithTime];
+
+    // Mark current user and move to top
+    if (currentUser) {
+      // Remove current user from list if exists
+      allUsers = allUsers.filter(user => user.username !== currentUser.username);
+      
+      // Check if current user is offline
+      const isOffline = this.isUserOffline(currentUser.username);
+      
+      // Add current user at the beginning
+      this.activeUsers.push({
+        ...currentUser,
+        status: isOffline ? 'offline' : 'online',
+        isCurrentUser: true,
+        lastActive: this.getUserLastActive(currentUser.username) || new Date().toISOString()
+      });
+    }
+
+    // Add all other users with status check
+    allUsers.forEach(user => {
+      const isOffline = this.isUserOffline(user.username);
+      const lastActive = this.getUserLastActive(user.username);
+      
+      this.activeUsers.push({
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName || user.username,
+        status: isOffline ? 'offline' : 'online',
+        loginTime: user.loginTime,
+        lastActive: lastActive || user.loginTime,
+        isCurrentUser: false
+      });
+    });
+
+    // Sort: online users first, then offline
+    this.activeUsers.sort((a, b) => {
+      if (a.isCurrentUser) return -1;
+      if (b.isCurrentUser) return 1;
+      if (a.status === 'online' && b.status === 'offline') return -1;
+      if (a.status === 'offline' && b.status === 'online') return 1;
+      return 0;
+    });
+  }
+
+  // Get current logged-in user
+  getCurrentUser() {
+    const userJson = sessionStorage.getItem('currentUser');
+    return userJson ? JSON.parse(userJson) : null;
+  }
+
+  // Display users in the grid
+  displayUsers() {
+    const usersGrid = document.getElementById('usersGrid');
+    const usersCount = document.getElementById('usersCount');
+    const noUsers = document.getElementById('noUsers');
+
+    if (!usersGrid) return;
+
+    // Count online users
+    const onlineCount = this.activeUsers.filter(u => u.status === 'online').length;
+    const offlineCount = this.activeUsers.filter(u => u.status === 'offline').length;
+
+    // Update count
+    usersCount.innerHTML = `
+      <span style="color: #10b981;"><i class="fas fa-circle"></i> ${onlineCount}</span> | 
+      <span style="color: #ef4444;"><i class="fas fa-circle"></i> ${offlineCount}</span>
+    `;
+
+    // Clear grid
+    usersGrid.innerHTML = '';
+
+    if (this.activeUsers.length === 0) {
+      usersGrid.style.display = 'none';
+      noUsers.style.display = 'block';
+      return;
+    }
+
+    usersGrid.style.display = 'grid';
+    noUsers.style.display = 'none';
+
+    // Create user cards
+    this.activeUsers.forEach((user, index) => {
+      const userCard = this.createUserCard(user, index);
+      usersGrid.appendChild(userCard);
+    });
+  }
+
+  // Create user card element
+  createUserCard(user, index) {
+    const card = document.createElement('div');
+    card.className = 'user-card';
+    card.style.animation = 'fadeIn 0.5s ease';
+    card.style.animationDelay = `${index * 0.05}s`;
+    card.style.animationFillMode = 'both';
+
+    const avatarColor = this.avatarColors[index % this.avatarColors.length];
+    const initial = (user.fullName || user.username).charAt(0).toUpperCase();
+    const timeAgo = this.getTimeAgo(user.lastActive);
+    const isOnline = user.status === 'online';
+
+    // Card styling based on status
+    if (user.isCurrentUser) {
+      card.style.background = isOnline 
+        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+      card.style.border = isOnline ? '2px solid #667eea' : '2px solid #6b7280';
+    } else if (!isOnline) {
+      card.style.opacity = '0.6';
+      card.style.background = 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)';
+    }
+
+    const textColor = user.isCurrentUser ? 'white' : '#333';
+    const subTextColor = user.isCurrentUser ? 'rgba(255,255,255,0.9)' : '#666';
+    const emailColor = user.isCurrentUser ? 'rgba(255,255,255,0.8)' : '#888';
+    const timeColor = user.isCurrentUser ? 'rgba(255,255,255,0.7)' : '#999';
+
+    card.innerHTML = `
+      <div class="user-avatar ${isOnline ? 'online' : ''} ${avatarColor}">
+        ${initial}
+      </div>
+      <div class="user-info">
+        <div class="user-name" style="color: ${textColor};">
+          ${this.escapeHtml(user.fullName || user.username)}
+          ${user.isCurrentUser ? '<span class="status-badge"><i class="fas fa-user"></i> คุณ</span>' : ''}
+          ${!isOnline ? '<span class="status-badge" style="background: #ef4444;"><i class="fas fa-circle"></i> Offline</span>' : ''}
+        </div>
+        <div class="user-username" style="color: ${subTextColor};">
+          <i class="fas fa-at"></i> ${this.escapeHtml(user.username)}
+        </div>
+        <div class="user-email" style="color: ${emailColor};">
+          <i class="fas fa-envelope"></i> ${this.escapeHtml(user.email)}
+        </div>
+        <div class="user-time" style="color: ${timeColor};">
+          <i class="fas fa-clock"></i> ${isOnline ? 'ใช้งานล่าสุด' : 'ออฟไลน์'} ${timeAgo}
+        </div>
+      </div>
+    `;
+
+    return card;
+  }
+
+  // Calculate time ago
+  getTimeAgo(dateString) {
+    if (!dateString) return 'เมื่อสักครู่';
+
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'เมื่อสักครู่';
+    if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`;
+    if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`;
+    return `${diffDays} วันที่แล้ว`;
+  }
+
+  // Escape HTML to prevent XSS
+  escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+  }
+
+  // Refresh users list
+  refreshUsers() {
+    this.loadAllUsers();
+    this.displayUsers();
+  }
+
+  // Send login data to server (API call)
+  async sendLoginData(userData) {
+    try {
+      const response = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: userData.username,
+          email: userData.email,
+          fullName: userData.fullName,
+          loginTime: userData.loginTime,
+          status: userData.status,
+          lastActive: userData.lastActive,
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send login data');
+      }
+
+      const result = await response.json();
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Error sending login data:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get all active users data
+  getActiveUsersData() {
+    return {
+      count: this.activeUsers.length,
+      onlineCount: this.activeUsers.filter(u => u.status === 'online').length,
+      offlineCount: this.activeUsers.filter(u => u.status === 'offline').length,
+      users: this.activeUsers.map(user => ({
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        loginTime: user.loginTime,
+        lastActive: user.lastActive,
+        status: user.status,
+        isCurrentUser: user.isCurrentUser || false
+      })),
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  // Export active users data as JSON
+  exportUsersData() {
+    const data = this.getActiveUsersData();
+    const jsonString = JSON.stringify(data, null, 2);
+    
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `active-users-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Clear offline users (optional utility)
+  clearOfflineUsers() {
+    const activityData = JSON.parse(localStorage.getItem('userActivity') || '{}');
+    const now = new Date();
+    
+    Object.keys(activityData).forEach(username => {
+      const lastActive = new Date(activityData[username]);
+      const diffMs = now - lastActive;
+      
+      // Remove users offline for more than 24 hours
+      if (diffMs > 24 * 60 * 60 * 1000) {
+        delete activityData[username];
+      }
+    });
+    
+    localStorage.setItem('userActivity', JSON.stringify(activityData));
+  }
+}
+
+// ==========================================
+// GLOBAL FUNCTIONS
+// ==========================================
+
+let activeUsersManager;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  activeUsersManager = new ActiveUsersManager();
+  
+  // Add fadeIn animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+});
+
+// Refresh active users (called by button)
+function refreshActiveUsers() {
+  const btn = document.querySelector('.refresh-btn');
+  if (btn) {
+    btn.classList.add('loading');
+  }
+
+  if (activeUsersManager) {
+    activeUsersManager.refreshUsers();
+  }
+
+  setTimeout(() => {
+    if (btn) {
+      btn.classList.remove('loading');
+    }
+  }, 1000);
+}
+
+// Export users data
+function exportActiveUsers() {
+  if (activeUsersManager) {
+    activeUsersManager.exportUsersData();
+  }
+}
+
+// Send current user login data to server
+async function sendCurrentUserLogin() {
+  const currentUser = activeUsersManager?.getCurrentUser();
+  
+  if (!currentUser) {
+    console.error('No user is currently logged in');
+    return { success: false, error: 'No active user' };
+  }
+
+  if (activeUsersManager) {
+    return await activeUsersManager.sendLoginData(currentUser);
+  }
+  
+  return { success: false, error: 'Manager not initialized' };
+}
+
+// Get active users data
+function getActiveUsers() {
+  if (activeUsersManager) {
+    return activeUsersManager.getActiveUsersData();
+  }
+  return { count: 0, users: [], timestamp: new Date().toISOString() };
+}
+
+// Clear old offline users
+function clearOldOfflineUsers() {
+  if (activeUsersManager) {
+    activeUsersManager.clearOfflineUsers();
+  }
+}
+
+// ในส่วนที่สร้าง userCard ให้เพิ่มปุ่มลบ
+const deleteBtn = document.createElement('button');
+deleteBtn.className = 'delete-btn';
+deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+deleteBtn.onclick = (e) => {
+    e.stopPropagation();
+    deleteUser(user.id, user.fullname);
+};
+userCard.appendChild(deleteBtn);
+
+
+async function deleteUser(userId, userName) {
+    if (confirm(`คุณต้องการลบผู้ใช้ "${userName}" ออกจากระบบหรือไม่?`)) {
+        try {
+            // เรียก API เพื่อลบผู้ใช้
+            const response = await fetch(`YOUR_API_ENDPOINT/delete-user/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // เพิ่ม authorization header ถ้าจำเป็น
+                }
+            });
+
+            if (response.ok) {
+                alert('ลบผู้ใช้เรียบร้อยแล้ว');
+                refreshActiveUsers(); // รีเฟรชรายการผู้ใช้
+            } else {
+                alert('เกิดข้อผิดพลาดในการลบผู้ใช้');
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert('ไม่สามารถลบผู้ใช้ได้');
+        }
+    }
+}
+
+// ==========================================
 // EXPORT FOR MODULE USE (Optional)
 // ==========================================
 
@@ -701,3 +1199,4 @@ if (typeof module !== 'undefined' && module.exports) {
     closeUserInfo
   };
 }
+
