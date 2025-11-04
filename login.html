@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - CSV Search Engine Pro</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(125deg, #e5e7eb 0%, #e5e7eb 50%, #000000 50%, #000000 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.95);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      max-width: 450px;
+      width: 100%;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-header {
+      background: url("https://github.com/asianstanley/PRODUCTION-SMT/blob/main/IMG_0018.gif?raw=true") no-repeat center center;
+      background-size: cover; /* ทำให้ภาพขยายเต็มพื้นที่ */
+      padding: 40px 30px;
+      text-align: center;
+      color: black;
+    }
+
+    .login-header img {
+      max-width: 200px;
+      height: auto;
+      margin-bottom: 20px;
+    }
+
+    .login-header h2 {
+      font-weight: 700;
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+
+    .login-header p {
+        
+      font-size: 0.95rem;
+      opacity: 0.9;
+      margin: 0;
+    }
+
+    .login-body {
+      padding: 40px 30px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+      position: relative;
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 10px;
+      display: block;
+      font-size: 0.9rem;
+    }
+
+    .input-group-custom {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-size: 1.1rem;
+      z-index: 10;
+    }
+
+    .form-control {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px 16px 14px 45px;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      background: white;
+      width: 100%;
+    }
+
+    .form-control:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      outline: none;
+    }
+
+    .form-control::placeholder {
+      color: #9ca3af;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      cursor: pointer;
+      z-index: 10;
+      transition: color 0.3s ease;
+    }
+
+    .password-toggle:hover {
+      color: #667eea;
+    }
+
+    .remember-forgot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      font-size: 0.9rem;
+    }
+
+    .custom-checkbox {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .custom-checkbox input {
+      width: 18px;
+      height: 18px;
+      margin-right: 8px;
+      cursor: pointer;
+      accent-color: #667eea;
+    }
+
+    .custom-checkbox label {
+      margin: 0;
+      cursor: pointer;
+      color: #374151;
+    }
+
+    .forgot-link {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+
+    .forgot-link:hover {
+      color: #764ba2;
+      text-decoration: none;
+    }
+
+    .btn-login {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: url("https://github.com/asianstanley/PRODUCTION-SMT/blob/main/IMG_0018.gif?raw=true") no-repeat center center;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
+    }
+
+    .divider {
+      text-align: center;
+      margin: 25px 0;
+      position: relative;
+    }
+
+    .divider::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 1px;
+      background: #e5e7eb;
+    }
+
+    .divider span {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 0 15px;
+      position: relative;
+      color: #9ca3af;
+      font-size: 0.85rem;
+    }
+
+    .register-section {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .register-text {
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+
+    .register-link {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      margin-left: 5px;
+      transition: color 0.3s ease;
+    }
+
+    .register-link:hover {
+      color: #764ba2;
+      text-decoration: none;
+    }
+
+    .alert-message {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #34d399;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #f87171;
+    }
+
+    /* User Info Box */
+    .user-info-box {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 15px 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      display: none;
+      min-width: 250px;
+      z-index: 1000;
+      animation: slideInUp 0.4s ease-out;
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .user-info-box.show {
+      display: block;
+    }
+
+    .user-info-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .user-avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    
+
+    .user-details {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .user-email {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .user-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: #10b981;
+      margin-top: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    
+
+    .user-close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      font-size: 1.1rem;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .user-close-btn:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 576px) {
+      .login-container {
+        border-radius: 16px;
+        margin: 10px;
+      }
+
+      .login-header {
+        padding: 30px 20px;
+      }
+
+      .login-header h2 {
+        font-size: 1.5rem;
+      }
+
+      .login-header img {
+        max-width: 150px;
+      }
+
+      .login-body {
+        padding: 30px 20px;
+      }
+
+      .form-control {
+        padding: 12px 14px 12px 40px;
+        font-size: 0.9rem;
+      }
+
+      .btn-login {
+        padding: 12px;
+        font-size: 0.95rem;
+      }
+
+      .user-info-box {
+        bottom: 10px;
+        right: 10px;
+        min-width: 220px;
+        padding: 12px 15px;
+      }
+
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        font-size: 1rem;
+      }
+
+      .user-name {
+        font-size: 0.85rem;
+      }
+
+      .user-email {
+        font-size: 0.75rem;
+      }
+      
+    }
+
+
+    /* Decorative GIF Icon */
+    .decorative-icon {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 4px solid rgba(255, 255, 255, 0.9);
+      animation: float 3s ease-in-out infinite;
+      z-index: 999;
+      transition: all 0.3s ease;
+    }
+
+    .decorative-icon:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 48px rgba(102, 126, 234, 0.5);
+    }
+
+    .decorative-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <!-- Header -->
+    <div class="login-header">
+      <img src="https://github.com/asianstanley/PRODUCTION-SMT/blob/main/IMG_0017.gif?raw=true" alt="CSV Search Engine Logo">
+      
+      <h2>Welcome to ASI</h2>
+      <p>Login to access your account</p>
+    </div>
+
+    
+    <!-- Login Form -->
+    <div class="login-body">
+      <!-- Alert Message -->
+      <div id="alertMessage" class="alert-message"></div>
+
+      <form id="loginForm">
+        <!-- Username/Email -->
+        <div class="form-group">
+          <label for="username" class="form-label">Username or Email</label>
+          <div class="input-group-custom">
+            <i class="fas fa-user input-icon"></i>
+            <input type="text" class="form-control" id="username" placeholder="Enter your username or email" required>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <div class="input-group-custom">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
+            <i class="fas fa-eye password-toggle" id="togglePassword"></i>
+          </div>
+        </div>
+
+        <!-- Remember & Forgot -->
+        <div class="remember-forgot">
+          <div class="custom-checkbox">
+            <input type="checkbox" id="rememberMe">
+            <label for="rememberMe">Remember me</label>
+          </div>
+          <a href="forgot-password.html" class="forgot-link">Forgot Password?</a>
+        </div>
+
+        <!-- Login Button -->
+        <button type="submit" class="btn-login">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="divider">
+        <span>OR</span>
+      </div>
+
+      <!-- Register Section -->
+      <div class="register-section">
+        <span class="register-text">Don't have an account?</span>
+        <a href="register.html" class="register-link">Register Now</a>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- User Info Box -->
+  <div class="user-info-box" id="userInfoBox">
+    <button class="user-close-btn" onclick="closeUserInfo()">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="user-info-header">
+      <div class="user-avatar" id="userAvatar">A</div>
+      <div class="user-details">
+        <p class="user-name" id="userName">Admin User</p>
+        <p class="user-email" id="userEmail">admin@example.com</p>
+      </div>
+    </div>
+    <div class="user-status">
+      <span class="status-dot"></span>
+      <span>Online</span>
+    </div>
+  </div>
+  
+
+  <!-- Decorative Icon -->
+  <div class="decorative-icon">
+    <img src="https://github.com/asianstanley/PRODUCTION-SMT/blob/main/SHIN.gif?raw=true" alt="Decorative Icon">
+  </div>
+  <script src="SCRIPTINDEX888.js"></script>
+  
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - ASI System</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(125deg, #e5e7eb 0%, #e5e7eb 50%, #000000 50%, #000000 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .register-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 500px;
+      padding: 40px;
+      animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .register-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .register-header i {
+      font-size: 50px;
+      color: #667eea;
+      margin-bottom: 15px;
+    }
+
+    .register-header h1 {
+      font-size: 28px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .register-header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .form-group label i {
+      margin-right: 5px;
+      color: #667eea;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 40px 12px 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .input-icon {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .input-icon:hover {
+      color: #667eea;
+    }
+
+    /* Password Strength Indicator */
+    .password-strength {
+      margin-top: 8px;
+    }
+
+    .strength-bar-container {
+      width: 100%;
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 5px;
+    }
+
+    .strength-bar {
+      height: 100%;
+      width: 0%;
+      transition: all 0.3s ease;
+      background: #ef4444;
+    }
+
+    .strength-text {
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    /* Checkbox */
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      cursor: pointer;
+      accent-color: #667eea;
+    }
+
+    .checkbox-group label {
+      font-size: 14px;
+      color: #666;
+      cursor: pointer;
+      margin-bottom: 0;
+    }
+
+    .checkbox-group label a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .checkbox-group label a:hover {
+      text-decoration: underline;
+    }
+
+    /* Button */
+    .btn-register {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-register:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-register:active {
+      transform: translateY(0);
+    }
+
+    .btn-register:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Alert Message */
+    .alert-message {
+      padding: 12px 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+    }
+
+    /* Login Link */
+    .login-link {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .login-link a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
+    }
+
+    .divider::before {
+      margin-right: 10px;
+    }
+
+    .divider::after {
+      margin-left: 10px;
+    }
+
+    /* Responsive */
+    @media (max-width: 576px) {
+      .register-container {
+        padding: 30px 20px;
+      }
+
+      .register-header h1 {
+        font-size: 24px;
+      }
+
+      .form-control {
+        padding: 10px 35px 10px 12px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="register-container">
+    <!-- Header -->
+    <div class="register-header">
+      <i class="fas fa-user-plus"></i>
+      <h1>Create Account</h1>
+      <p>Join us today! Fill in the details below</p>
+    </div>
+
+    <!-- Alert Message -->
+    <div id="regAlertMessage" class="alert-message"></div>
+
+    <!-- Registration Form -->
+    <form id="registerForm">
+      <!-- Full Name -->
+      <div class="form-group">
+        <label for="fullName">
+          <i class="fas fa-user"></i>
+          Full Name
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="fullName" 
+            name="fullName" 
+            class="form-control" 
+            placeholder="Enter your full name"
+            autocomplete="name"
+          >
+        </div>
+      </div>
+
+      <!-- Username -->
+      <div class="form-group">
+        <label for="regUsername">
+          <i class="fas fa-user-circle"></i>
+          Username
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="regUsername" 
+            name="username" 
+            class="form-control" 
+            placeholder="Choose a username"
+            autocomplete="username"
+          >
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="regEmail">
+          <i class="fas fa-envelope"></i>
+          Email Address
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="email" 
+            id="regEmail" 
+            name="email" 
+            class="form-control" 
+            placeholder="Enter your email"
+            autocomplete="email"
+          >
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="regPassword">
+          <i class="fas fa-lock"></i>
+          Password
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="password" 
+            id="regPassword" 
+            name="password" 
+            class="form-control" 
+            placeholder="Create a password"
+            autocomplete="new-password"
+          >
+          <i class="fas fa-eye input-icon" id="toggleRegPassword"></i>
+        </div>
+        
+        <!-- Password Strength Indicator -->
+        <div class="password-strength">
+          <div class="strength-bar-container">
+            <div class="strength-bar" id="strengthBar"></div>
+          </div>
+          <div class="strength-text" id="strengthText">Enter password to check strength</div>
+        </div>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label for="confirmPassword">
+          <i class="fas fa-lock"></i>
+          Confirm Password
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="password" 
+            id="confirmPassword" 
+            name="confirmPassword" 
+            class="form-control" 
+            placeholder="Re-enter your password"
+            autocomplete="new-password"
+          >
+          <i class="fas fa-eye input-icon" id="toggleConfirmPassword"></i>
+        </div>
+      </div>
+
+      <!-- Terms & Conditions -->
+      <div class="checkbox-group">
+        <input type="checkbox" id="acceptTerms" name="acceptTerms">
+        <label for="acceptTerms">
+          I agree to the <a href="#" onclick="return false;">Terms & Conditions</a>
+        </label>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn-register">
+        <i class="fas fa-user-plus"></i>
+        Create Account
+      </button>
+    </form>
+
+    <!-- Divider -->
+    <div class="divider">OR</div>
+
+    <!-- Login Link -->
+    <div class="login-link">
+      Already have an account? <a href="LOGININDEX888.html">Login here</a>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="SCRIPTINDEX888.js"></script>
+</body>
+</html>
