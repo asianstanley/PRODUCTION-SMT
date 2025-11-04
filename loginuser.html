@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Users Display</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+
+        .active-users-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .users-count {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .user-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .user-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .user-avatar.online::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 14px;
+            height: 14px;
+            background: #10b981;
+            border: 3px solid white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .user-username {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .user-email {
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .user-time {
+            font-size: 11px;
+            color: #999;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #10b981;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .no-users {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-users i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .refresh-btn i {
+            animation: rotate 1s linear infinite paused;
+        }
+
+        .refresh-btn.loading i {
+            animation-play-state: running;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* ปุ่มเลือก */
+        .select-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .select-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .select-btn.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        /* ปุ่มลบที่เลือก */
+        .delete-selected-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .delete-selected-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .delete-selected-btn.show {
+            display: flex;
+        }
+
+        .user-card.select-mode {
+            cursor: pointer;
+        }
+
+        .user-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+        }
+
+        .user-checkbox {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            background: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: none;
+        }
+
+        .user-card.select-mode .user-checkbox {
+            display: flex;
+        }
+
+        .user-card.selected .user-checkbox {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .user-checkbox i {
+            font-size: 14px;
+            display: none;
+        }
+
+        .user-card.selected .user-checkbox i {
+            display: block;
+        }
+
+        /* สีต่างๆ สำหรับ Avatar */
+        .bg-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .bg-green { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
+        .bg-red { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .bg-purple { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .bg-orange { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .bg-pink { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-buttons {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Active Users Section -->
+    <div class="active-users-section">
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-users"></i>
+                ผู้ใช้งานทั้งหมด
+            </div>
+            <div class="header-buttons">
+                <span class="users-count" id="usersCount">0 คน</span>
+                <button class="refresh-btn" onclick="refreshActiveUsers()">
+                    <i class="fas fa-sync-alt"></i>
+                    รีเฟรช
+                </button>
+                <button class="select-btn" onclick="toggleSelectMode()">
+                    <i class="fas fa-check-square"></i>
+                    เลือก
+                </button>
+                <button class="delete-selected-btn" id="deleteSelectedBtn" onclick="deleteSelectedUsers()">
+                    <i class="fas fa-trash-alt"></i>
+                    ลบที่เลือก (<span id="selectedCount">0</span>)
+                </button>
+            </div>
+        </div>
+
+        <div class="users-grid" id="usersGrid">
+            <!-- User cards will be inserted here -->
+        </div>
+
+        <div class="no-users" id="noUsers" style="display: none;">
+            <i class="fas fa-user-slash"></i>
+            <p style="font-size: 16px; margin-top: 10px;">ไม่มีผู้ใช้งานในระบบ</p>
+        </div>
+    </div>
+
+    <script src="SCRIPTINDEX888.js"></script>
+    <script>
+        let selectMode = false;
+        let selectedUsers = new Set();
+        let activeUsersData = []; // เก็บข้อมูลผู้ใช้
+
+        // Override displayUsers function from SCRIPTINDEX888.js
+        if (typeof ActiveUsersManager !== 'undefined') {
+            ActiveUsersManager.prototype.displayUsers = function() {
+                const usersGrid = document.getElementById('usersGrid');
+                const usersCount = document.getElementById('usersCount');
+                const noUsers = document.getElementById('noUsers');
+
+                if (!usersGrid) return;
+
+                // เก็บข้อมูลไว้ใช้งาน
+                activeUsersData = this.activeUsers;
+
+                // Count online users
+                const onlineCount = this.activeUsers.filter(u => u.status === 'online').length;
+                const offlineCount = this.activeUsers.filter(u => u.status === 'offline').length;
+
+                // Update count
+                usersCount.innerHTML = `
+                    <span style="color: #10b981;"><i class="fas fa-circle"></i> ${onlineCount}</span> | 
+                    <span style="color: #ef4444;"><i class="fas fa-circle"></i> ${offlineCount}</span>
+                `;
+
+                // Clear grid
+                usersGrid.innerHTML = '';
+
+                if (this.activeUsers.length === 0) {
+                    usersGrid.style.display = 'none';
+                    noUsers.style.display = 'block';
+                    return;
+                }
+
+                usersGrid.style.display = 'grid';
+                noUsers.style.display = 'none';
+
+                // Create user cards
+                this.activeUsers.forEach((user, index) => {
+                    const userCard = this.createUserCard(user, index);
+                    
+                    // เพิ่ม data-user-id และ onclick
+                    userCard.setAttribute('data-user-id', user.username);
+                    userCard.onclick = () => toggleUserSelection(user.username);
+                    
+                    // เพิ่ม checkbox
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'user-checkbox';
+                    checkbox.innerHTML = '<i class="fas fa-check"></i>';
+                    userCard.insertBefore(checkbox, userCard.firstChild);
+                    
+                    usersGrid.appendChild(userCard);
+                });
+            };
+        }
+
+        function toggleSelectMode() {
+            selectMode = !selectMode;
+            selectedUsers.clear();
+            
+            const selectBtn = document.querySelector('.select-btn');
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const userCards = document.querySelectorAll('.user-card');
+            
+            if (selectMode) {
+                selectBtn.classList.add('active');
+                selectBtn.innerHTML = '<i class="fas fa-times"></i> ยกเลิก';
+                userCards.forEach(card => card.classList.add('select-mode'));
+            } else {
+                selectBtn.classList.remove('active');
+                selectBtn.innerHTML = '<i class="fas fa-check-square"></i> เลือก';
+                deleteBtn.classList.remove('show');
+                userCards.forEach(card => {
+                    card.classList.remove('select-mode', 'selected');
+                });
+            }
+            
+            updateSelectedCount();
+        }
+
+        function toggleUserSelection(username) {
+            if (!selectMode) return;
+            
+            const cardElement = document.querySelector(`[data-user-id="${username}"]`);
+            if (!cardElement) return;
+            
+            if (selectedUsers.has(username)) {
+                selectedUsers.delete(username);
+                cardElement.classList.remove('selected');
+            } else {
+                selectedUsers.add(username);
+                cardElement.classList.add('selected');
+            }
+            
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = selectedUsers.size;
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const countSpan = document.getElementById('selectedCount');
+            
+            countSpan.textContent = count;
+            
+            if (count > 0 && selectMode) {
+                deleteBtn.classList.add('show');
+            } else {
+                deleteBtn.classList.remove('show');
+            }
+        }
+
+        function deleteSelectedUsers() {
+            if (selectedUsers.size === 0) return;
+            
+            if (confirm(`คุณต้องการลบผู้ใช้ ${selectedUsers.size} คนที่เลือกหรือไม่?`)) {
+                const usersToDelete = Array.from(selectedUsers);
+                
+                // ลบผู้ใช้จาก registered users
+                const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+                const updatedUsers = registeredUsers.filter(user => !usersToDelete.includes(user.username));
+                localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
+                
+                // ลบ activity data
+                const activityData = JSON.parse(localStorage.getItem('userActivity') || '{}');
+                usersToDelete.forEach(username => {
+                    delete activityData[username];
+                });
+                localStorage.setItem('userActivity', JSON.stringify(activityData));
+                
+                // ลบ card จาก DOM พร้อม animation
+                usersToDelete.forEach(username => {
+                    const card = document.querySelector(`[data-user-id="${username}"]`);
+                    if (card) {
+                        card.style.animation = 'fadeOut 0.3s ease';
+                        setTimeout(() => card.remove(), 300);
+                    }
+                });
+                
+                // รีเฟรชข้อมูลใหม่
+                setTimeout(() => {
+                    if (typeof activeUsersManager !== 'undefined') {
+                        activeUsersManager.loadAllUsers();
+                        activeUsersManager.displayUsers();
+                    }
+                    toggleSelectMode();
+                }, 300);
+                
+                // แสดงข้อความสำเร็จ
+                alert(`ลบผู้ใช้ ${usersToDelete.length} คนเรียบร้อยแล้ว`);
+            }
+        }
+
+        // เรียกใช้เมื่อโหลดหน้าเสร็จ
+        window.addEventListener('DOMContentLoaded', () => {
+            // รอให้ ActiveUsersManager โหลดเสร็จก่อน
+            setTimeout(() => {
+                if (typeof activeUsersManager !== 'undefined') {
+                    activeUsersManager.displayUsers();
+                }
+            }, 500);
+        });
+    </script>
+
+</body>
+</html>
