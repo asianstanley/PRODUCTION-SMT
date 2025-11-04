@@ -718,11 +718,12 @@
                   <input type="file" class="form-control-file" id="csvFile" accept=".csv" aria-describedby="csvFileHelp">
                   <small id="csvFileHelp" class="form-text text-muted">Select a CSV file to upload and process</small>
                   <div class="mt-3">
-                    <button class="btn btn-secondary" onclick="clearFileInput()" title="Clear file selection" style="margin-right: 8px;">
-                      <i class="fas fa-times"></i> Clear
+                    <button onclick="clearAllFilters()" class="btn btn-warning">
+                        <i class="fas fa-filter-circle-xmark"></i> Clear All Filters
                     </button>
-                    <button class="btn btn-success" onclick="exportCSV()" title="Export CSV data">
-                      <i class="fas fa-download"></i> Export
+
+                    <button onclick="exportFilteredCSV()" class="btn btn-success">
+                        <i class="fas fa-file-export"></i> Export Filtered Data
                     </button>
                   </div>
                 </div>
