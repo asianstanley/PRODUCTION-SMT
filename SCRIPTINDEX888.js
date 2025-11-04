@@ -195,7 +195,7 @@ class LoginSystem {
     
     // Redirect after delay
     setTimeout(() => {
-      window.location.href = 'index.html';
+      window.location.href = 'home.html';
     }, 2000);
   }
 
@@ -700,4 +700,5 @@ if (typeof module !== 'undefined' && module.exports) {
     getCurrentUser,
     closeUserInfo
   };
+
 }
