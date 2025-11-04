@@ -149,7 +149,6 @@ class LoginSystem {
           { username: 'admin', password: 'admin123', email: 'admin@asi.com', fullName: 'Admin User' },
           { username: 'user', password: 'user123', email: 'user@asi.com', fullName: 'Regular User' },
           { username: 'demo', password: 'demo123', email: 'demo@asi.com', fullName: 'Demo User' },
-          { username: '005753', password: '005753', email: '005753@asi.com', fullName: '00573 User' },
           ...registeredUsers
         ];
 
@@ -196,7 +195,7 @@ class LoginSystem {
     
     // Redirect after delay
     setTimeout(() => {
-      window.location.href = 'index.html';
+      window.location.href = 'home.html';
     }, 2000);
   }
 
@@ -379,7 +378,7 @@ class RegisterSystem {
   // Check if username exists
   checkUsernameExists(username) {
     const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    const defaultUsers = ['admin', 'user', 'demo','005753'];
+    const defaultUsers = ['admin', 'user', 'demo'];
     
     return defaultUsers.includes(username.toLowerCase()) || 
            registeredUsers.some(u => u.username.toLowerCase() === username.toLowerCase());
@@ -410,7 +409,7 @@ class RegisterSystem {
   // Check if email exists
   checkEmailExists(email) {
     const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    const defaultEmails = ['admin@asi.com', 'user@asi.com', 'demo@asi.com','005753@asi.com'];
+    const defaultEmails = ['admin@asi.com', 'user@asi.com', 'demo@asi.com'];
     
     return defaultEmails.includes(email.toLowerCase()) || 
            registeredUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
@@ -639,11 +638,11 @@ function closeUserInfo() {
 function checkExistingSession() {
   const isLoggedIn = localStorage.getItem('isLoggedIn');
   
-  if (isLoggedIn === 'False') {
+  if (isLoggedIn === 'false') {
     const currentUser = sessionStorage.getItem('currentUser');
     
     if (currentUser) {
-      window.location.href = 'login.html';
+      window.location.href = 'index.html';
     }
   }
 }
@@ -652,7 +651,7 @@ function checkExistingSession() {
 function logout() {
   sessionStorage.removeItem('currentUser');
   localStorage.setItem('isLoggedIn', 'false');
-  window.location.href = 'login.html';
+  window.location.href = 'index.html';
 }
 
 // Get current user
