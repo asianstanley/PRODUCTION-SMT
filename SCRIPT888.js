@@ -61,6 +61,453 @@ function processData(csvDataText) {
     // แสดงข้อความใน console เท่านั้น
     console.log(`อัพโหลดไฟล์สำเร็จ! โหลดข้อมูล ${data.length} แถว`);
 }
+//--------------------------------
+// ========================================
+// TABLE COLUMN FILTER SYSTEM
+// ========================================
+
+// Global variables for filter
+let activeFilters = {};
+let filterDropdown = null;
+
+// Initialize table filters
+function initializeTableFilters() {
+    const table = document.getElementById('resultsTable');
+    if (!table) return;
+    
+    const headerCells = table.querySelectorAll('thead th');
+    
+    headerCells.forEach((th, columnIndex) => {
+        // Skip if already has filter button
+        if (th.querySelector('.filter-btn')) return;
+        
+        // Create filter button
+        const filterBtn = document.createElement('button');
+        filterBtn.className = 'filter-btn';
+        filterBtn.innerHTML = '<i class="fas fa-filter"></i>';
+        filterBtn.style.cssText = `
+            margin-left: 8px;
+            padding: 4px 8px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #667eea;
+            transition: all 0.2s;
+        `;
+        
+        filterBtn.onmouseover = function() {
+            this.style.background = 'rgba(102, 126, 234, 0.2)';
+            this.style.borderColor = '#667eea';
+        };
+        
+        filterBtn.onmouseout = function() {
+            this.style.background = 'rgba(102, 126, 234, 0.1)';
+            this.style.borderColor = 'rgba(102, 126, 234, 0.3)';
+        };
+        
+        filterBtn.onclick = function(e) {
+            e.stopPropagation();
+            showFilterDropdown(columnIndex, th);
+        };
+        
+        th.appendChild(filterBtn);
+        
+        // Update filter button badge if filters exist
+        updateFilterBadge(columnIndex);
+    });
+}
+
+// Show filter dropdown
+function showFilterDropdown(columnIndex, headerCell) {
+    // Close existing dropdown
+    if (filterDropdown) {
+        closeFilterDropdown();
+    }
+    
+    // Get unique values from column
+    const table = document.getElementById('resultsTable');
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    
+    const values = new Set();
+    rows.forEach(row => {
+        const cell = row.cells[columnIndex];
+        if (cell) {
+            const value = cell.textContent.trim();
+            if (value) values.add(value);
+        }
+    });
+    
+    const uniqueValues = Array.from(values).sort();
+    
+    // Create dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'filter-dropdown';
+    dropdown.style.cssText = `
+        position: absolute;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        padding: 12px;
+        min-width: 250px;
+        max-width: 350px;
+        max-height: 400px;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+    `;
+    
+    // Get position
+    const rect = headerCell.getBoundingClientRect();
+    dropdown.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+    dropdown.style.left = (rect.left + window.scrollX) + 'px';
+    
+    // Create content
+    let content = '<div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">';
+    content += '<div style="font-weight: 600; color: #333; margin-bottom: 8px;">Filter Options</div>';
+    
+    // Search box
+    content += '<input type="text" id="filterSearch" placeholder="Search..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; font-size: 14px;">';
+    
+    // Select All / Deselect All
+    content += '<div style="display: flex; gap: 10px; margin-bottom: 8px;">';
+    content += '<button onclick="selectAllFilters(' + columnIndex + ')" style="flex: 1; padding: 6px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Select All</button>';
+    content += '<button onclick="deselectAllFilters(' + columnIndex + ')" style="flex: 1; padding: 6px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear All</button>';
+    content += '</div>';
+    content += '</div>';
+    
+    // Values list
+    content += '<div id="filterValuesList" style="overflow-y: auto; max-height: 250px; margin-bottom: 10px;">';
+    
+    if (uniqueValues.length === 0) {
+        content += '<div style="text-align: center; padding: 20px; color: #999;">No data available</div>';
+    } else {
+        uniqueValues.forEach((value, index) => {
+            const isChecked = !activeFilters[columnIndex] || activeFilters[columnIndex].includes(value);
+            content += '<label style="display: flex; align-items: center; padding: 6px 8px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'white\'">';
+            content += '<input type="checkbox" class="filter-checkbox" value="' + value + '" ' + (isChecked ? 'checked' : '') + ' style="margin-right: 8px; cursor: pointer;">';
+            content += '<span style="font-size: 13px; color: #333;">' + value + '</span>';
+            content += '</label>';
+        });
+    }
+    
+    content += '</div>';
+    
+    // Action buttons
+    content += '<div style="display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid #e0e0e0;">';
+    content += '<button onclick="applyColumnFilter(' + columnIndex + ')" style="flex: 1; padding: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Apply</button>';
+    content += '<button onclick="resetColumnFilter(' + columnIndex + ')" style="flex: 1; padding: 8px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Reset</button>';
+    content += '<button onclick="closeFilterDropdown()" style="padding: 8px 12px; background: #f3f4f6; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">✕</button>';
+    content += '</div>';
+    
+    dropdown.innerHTML = content;
+    document.body.appendChild(dropdown);
+    filterDropdown = dropdown;
+    
+    // Add search functionality
+    setTimeout(() => {
+        const searchInput = document.getElementById('filterSearch');
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.addEventListener('input', function() {
+                filterValuesList(this.value.toLowerCase());
+            });
+        }
+    }, 100);
+    
+    // Close on outside click
+    setTimeout(() => {
+        document.addEventListener('click', outsideClickHandler);
+    }, 100);
+}
+
+// Filter values list based on search
+function filterValuesList(searchTerm) {
+    const labels = document.querySelectorAll('#filterValuesList label');
+    labels.forEach(label => {
+        const text = label.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            label.style.display = 'flex';
+        } else {
+            label.style.display = 'none';
+        }
+    });
+}
+
+// Select all filters
+function selectAllFilters(columnIndex) {
+    const checkboxes = document.querySelectorAll('#filterValuesList .filter-checkbox');
+    checkboxes.forEach(cb => {
+        if (cb.parentElement.style.display !== 'none') {
+            cb.checked = true;
+        }
+    });
+}
+
+// Deselect all filters
+function deselectAllFilters(columnIndex) {
+    const checkboxes = document.querySelectorAll('#filterValuesList .filter-checkbox');
+    checkboxes.forEach(cb => {
+        if (cb.parentElement.style.display !== 'none') {
+            cb.checked = false;
+        }
+    });
+}
+
+// Apply column filter
+function applyColumnFilter(columnIndex) {
+    const checkboxes = document.querySelectorAll('#filterValuesList .filter-checkbox');
+    const selectedValues = [];
+    
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            selectedValues.push(cb.value);
+        }
+    });
+    
+    // Save filter
+    if (selectedValues.length === 0) {
+        delete activeFilters[columnIndex];
+    } else {
+        activeFilters[columnIndex] = selectedValues;
+    }
+    
+    // Apply all filters
+    applyAllFilters();
+    
+    // Update badge
+    updateFilterBadge(columnIndex);
+    
+    // Close dropdown
+    closeFilterDropdown();
+    
+    // Show message
+    showToast(`Applied filter: ${selectedValues.length} values selected`, 'success');
+}
+
+// Reset column filter
+function resetColumnFilter(columnIndex) {
+    delete activeFilters[columnIndex];
+    applyAllFilters();
+    updateFilterBadge(columnIndex);
+    closeFilterDropdown();
+    showToast('Filter cleared', 'info');
+}
+
+// Apply all active filters
+function applyAllFilters() {
+    const table = document.getElementById('resultsTable');
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+        let showRow = true;
+        
+        // Check each active filter
+        for (const [columnIndex, allowedValues] of Object.entries(activeFilters)) {
+            const cell = row.cells[columnIndex];
+            if (cell) {
+                const cellValue = cell.textContent.trim();
+                if (!allowedValues.includes(cellValue)) {
+                    showRow = false;
+                    break;
+                }
+            }
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+    });
+    
+    // Update visible count
+    updateVisibleRowCount();
+}
+
+// Update visible row count
+function updateVisibleRowCount() {
+    const table = document.getElementById('resultsTable');
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+    
+    console.log(`Showing ${visibleRows.length} of ${rows.length} rows`);
+}
+
+// Update filter badge
+function updateFilterBadge(columnIndex) {
+    const table = document.getElementById('resultsTable');
+    const th = table.querySelectorAll('thead th')[columnIndex];
+    if (!th) return;
+    
+    const filterBtn = th.querySelector('.filter-btn');
+    if (!filterBtn) return;
+    
+    // Remove existing badge
+    const existingBadge = filterBtn.querySelector('.filter-badge');
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+    
+    // Add new badge if filter is active
+    if (activeFilters[columnIndex]) {
+        const badge = document.createElement('span');
+        badge.className = 'filter-badge';
+        badge.textContent = activeFilters[columnIndex].length;
+        badge.style.cssText = `
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 600;
+            min-width: 18px;
+            text-align: center;
+        `;
+        filterBtn.style.position = 'relative';
+        filterBtn.appendChild(badge);
+        
+        // Change button color when filter is active
+        filterBtn.style.background = 'rgba(239, 68, 68, 0.1)';
+        filterBtn.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        filterBtn.style.color = '#ef4444';
+    } else {
+        filterBtn.style.background = 'rgba(102, 126, 234, 0.1)';
+        filterBtn.style.borderColor = 'rgba(102, 126, 234, 0.3)';
+        filterBtn.style.color = '#667eea';
+    }
+}
+
+// Close filter dropdown
+function closeFilterDropdown() {
+    if (filterDropdown) {
+        document.removeEventListener('click', outsideClickHandler);
+        if (filterDropdown.parentNode) {
+            filterDropdown.parentNode.removeChild(filterDropdown);
+        }
+        filterDropdown = null;
+    }
+}
+
+// Outside click handler
+function outsideClickHandler(e) {
+    if (filterDropdown && !filterDropdown.contains(e.target)) {
+        closeFilterDropdown();
+    }
+}
+
+// Clear all filters
+function clearAllFilters() {
+  try {
+    // Clear search input
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.value = '';
+    }
+    
+    // Clear results lists
+    const resultsList = document.getElementById('resultsList');
+    if (resultsList) {
+      resultsList.innerHTML = '';
+    }
+    
+    const resultsList2 = document.getElementById('resultsList2');
+    if (resultsList2) {
+      resultsList2.innerHTML = '';
+    }
+    
+    // Clear table
+    const table = document.getElementById('resultsTable');
+    const tbody = table.querySelector('tbody');
+    if (tbody) {
+      tbody.innerHTML = '';
+    }
+    
+    // Clear file input
+    const fileInput = document.getElementById('csvFile');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    
+    // แสดง success message
+    showClearSuccess();
+    
+  } catch (error) {
+    console.error('Clear Filters Error:', error);
+    alert('❌ เกิดข้อผิดพลาดในการล้างข้อมูล\n\n' + error.message);
+  }
+}
+
+// Export filtered data only
+function exportFilteredCSV() {
+    const table = document.getElementById('resultsTable');
+    
+    if (!table) {
+        console.error('Table not found');
+        return;
+    }
+    
+    const csv = [];
+    
+    // Add headers
+    const headerRow = [];
+    const headerCells = table.querySelectorAll('thead th');
+    headerCells.forEach(th => {
+        const text = th.textContent.replace(/"/g, '""');
+        // Remove filter button icon from export
+        const cleanText = text.replace(/\s*\uF0B0\s*/, '').trim();
+        headerRow.push('"' + cleanText + '"');
+    });
+    csv.push(headerRow.join(','));
+    
+    // Add visible rows only
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            const rowData = [];
+            const cells = row.cells;
+            
+            for (let j = 0; j < cells.length; j++) {
+                const cellText = cells[j].textContent.replace(/"/g, '""');
+                rowData.push('"' + cellText + '"');
+            }
+            
+            csv.push(rowData.join(','));
+        }
+    });
+    
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'filtered_results.csv';
+    
+    setTimeout(function() {
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
+    
+    showToast('Filtered data exported successfully', 'success');
+}
+
+// Call this after search results are displayed
+function enableTableFilters() {
+    setTimeout(() => {
+        initializeTableFilters();
+    }, 500);
+}
+
+//---------------------------------
 function fetchCSV() {
   var csvUrl = 'https://raw.githubusercontent.com/asianstanley/PRODUCTION-SMT/refs/heads/main/TABLE.csv';
   fetch(csvUrl)
@@ -504,10 +951,10 @@ function copyOffsetData() {
     
     document.body.removeChild(textarea);
 }
+///-------------------+++++++++++++++++++
+ 
 
-
-
-
+//+-----------------------++++++++++++++++++
 
 // Search function (exact copy of working code with Part Comment correction)
 function searchICSCode() {
@@ -519,6 +966,9 @@ function searchICSCode() {
     const resultsTableBody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
     
     console.log('Search term:', searchInput);
+
+
+    
     
     // Clear previous results
     resultsList.innerHTML = '';
@@ -564,6 +1014,8 @@ function searchICSCode() {
             }
         }
     }
+
+    
     
     console.log('Total matches found:', foundIndexes.length);
     
@@ -784,46 +1236,107 @@ function inserttable() {
     alert('Data inserted successfully. Added ' + foundIndexes.length + ' matching rows.');
 }
 
-// Export CSV function
-function exportCSV() {
+function exportFilteredCSV() {
+  try {
     const table = document.getElementById('resultsTable');
     
     if (!table) {
-        console.error('ไม่พบตารางที่มี id="resultsTable"');
-        return;
+      showToast('ไม่พบตาราง', 'error');
+      return;
+    }
+    
+    const tbody = table.querySelector('tbody');
+    const thead = table.querySelector('thead');
+    
+    // ตรวจสอบว่ามีข้อมูลหรือไม่
+    if (!tbody || tbody.rows.length === 0) {
+      showToast('⚠️ ไม่มีข้อมูลให้ Export กรุณาค้นหาและแสดงข้อมูลก่อน', 'warning');
+      return;
     }
     
     const csv = [];
-    const rows = table.rows;
     
-    for (let i = 0; i < rows.length; i++) {
-        const row = [];
-        const cells = rows[i].cells;
+    // เพิ่ม Headers
+    const headerRow = [];
+    const headerCells = thead.querySelectorAll('th');
+    headerCells.forEach(th => {
+      let text = th.textContent.trim();
+      // ลบไอคอน filter ออก
+      text = text.replace(/\s*[\uF0B0]\s*/g, '').trim();
+      // Escape quotes
+      text = text.replace(/"/g, '""');
+      headerRow.push('"' + text + '"');
+    });
+    csv.push(headerRow.join(','));
+    
+    // นับแถวที่มองเห็น (ไม่ถูก filter)
+    let visibleRowCount = 0;
+    const rows = tbody.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+      // ตรวจสอบว่าแถวนี้ถูก filter หรือไม่
+      if (row.style.display !== 'none') {
+        visibleRowCount++;
+        const rowData = [];
+        const cells = row.querySelectorAll('td');
         
-        for (let j = 0; j < cells.length; j++) {
-            const cellText = cells[j].innerText.replace(/"/g, '""');
-            row.push('"' + cellText + '"');
-        }
+        cells.forEach(cell => {
+          // ตรวจสอบว่าเป็นปุ่ม View หรือไม่
+          const button = cell.querySelector('.btn-view-offset');
+          let cellText;
+          
+          if (button) {
+            // ถ้ามีปุ่ม ให้เอา Offset XY data จาก onclick
+            cellText = 'View Offset';
+          } else {
+            cellText = cell.textContent.trim();
+          }
+          
+          // Escape quotes
+          cellText = cellText.replace(/"/g, '""');
+          rowData.push('"' + cellText + '"');
+        });
         
-        csv.push(row.join(','));
+        csv.push(rowData.join(','));
+      }
+    });
+    
+    if (visibleRowCount === 0) {
+      showToast('ไม่มีข้อมูลที่มองเห็นให้ Export', 'warning');
+      return;
     }
     
+    // สร้าง CSV content
     const csvContent = csv.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // เพิ่ม BOM สำหรับ UTF-8 (รองรับภาษาไทย)
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     
+    // สร้างชื่อไฟล์ที่มี timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = 'filtered_data_' + timestamp + '.csv';
+    
+    // Download
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'resultsearch.csv';
+    a.download = filename;
     
     setTimeout(function() {
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showToast(`Export สำเร็จ! ${visibleRowCount} แถว`, 'success');
     }, 100);
+    
+  } catch (error) {
+    console.error('Export Error:', error);
+    showToast('❌ เกิดข้อผิดพลาดในการ Export: ' + error.message, 'error');
+  }
 }
-
-// Copy function
 function copySelectedOptions(selectId) {
     const select = document.getElementById(selectId);
     let selectedOptions;
@@ -925,3 +1438,36 @@ function toggleMenu() {
     menu.classList.toggle('active');
     overlay.classList.toggle('active');
 }   
+
+
+// ฟังก์ชันช่วยเหลือ: Escape CSV values
+function escapeCSVValue(value) {
+  // ตรวจสอบว่าค่ามี comma, quotes, หรือ newlines
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    // Escape double quotes และครอบด้วย double quotes
+    return '"' + value.replace(/"/g, '""') + '"';
+  }
+  return value;
+}
+
+// ฟังก์ชันช่วยเหลือ: Download CSV file
+function downloadCSV(content, filename) {
+  // เพิ่ม BOM สำหรับ UTF-8 encoding (รองรับภาษาไทย)
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+  
+  // สร้าง download link
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // ปล่อย URL object
+  URL.revokeObjectURL(url);
+}
