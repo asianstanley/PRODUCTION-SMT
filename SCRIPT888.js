@@ -509,12 +509,17 @@ function enableTableFilters() {
 
 //---------------------------------
 function fetchCSV() {
-  var csvUrl = 'https://raw.githubusercontent.com/asianstanley/PRODUCTION-SMT/refs/heads/main/TABLE.csv';
+  const csvUrl = 'https://media.githubusercontent.com/media/asianstanley/PRODUCTION-SMT/refs/heads/main/TABLE.csv';
+
   fetch(csvUrl)
-    .then(response => response.text())
-    .then(data => processData(data))
-    .catch(error => console.error('Error fetching the CSV file:', error));
+    .then(res => res.text())
+    .then(data => {
+      console.log(data);  // CSV text จะอยู่ตรงนี้
+      processData(data);
+    })
+    .catch(err => console.error(err));
 }
+
 // ตัวเลือก 2: แสดงข้อความใน element บนหน้าเว็บ
 function processDataWithStatus(csvDataText) {
     console.log('=== Processing CSV ===');
