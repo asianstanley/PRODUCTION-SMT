@@ -1052,7 +1052,7 @@ function searchICSCode() {
         foundIndexes.forEach(function(index) {
             const row = resultsTableBody.insertRow();
             const cells = [];
-            for (let i = 0; i < 29; i++) {
+            for (let i = 0; i < 30; i++) {
                 cells.push(row.insertCell(i));
             }
             
@@ -1081,7 +1081,7 @@ function searchICSCode() {
             cells[22].textContent = window.csvData[index]['DatumAngle'] || '';
             cells[23].textContent = window.csvData[index]['Nozzle'] || '';
             cells[24].textContent = window.csvData[index]['TrayHeight'] || '';
-            cells[25].textContent = window.csvData[index]['Offset Num'] || '';
+            cells[25].textContent = window.csvData[index]['Offset_Num'] || '';
             
             // *** แก้ไขส่วนนี้ - สร้างปุ่มสำหรับ Offset XY ***
             const offsetXY = window.csvData[index]['Offset XY'] || '';
@@ -1096,6 +1096,7 @@ function searchICSCode() {
             
             cells[27].textContent = window.csvData[index]['Point'] || '';
             cells[28].textContent = window.csvData[index]['Board'] || '';
+            cells[29].textContent = window.csvData[index]['Mount Comments'] || '';
             
             // Highlight matching cells
             cells.forEach(cell => {
@@ -1161,7 +1162,7 @@ function inserttable() {
     foundIndexes.forEach(function(index) {
         var newRow = tableBody.insertRow();
         var cells = [];
-        for (var i = 0; i < 29; i++) {
+        for (var i = 0; i < 30; i++) {
             cells.push(newRow.insertCell(i));
         }
 
@@ -1190,7 +1191,7 @@ function inserttable() {
         cells[22].textContent = window.csvData[index]['DatumAngle'] || '';
         cells[23].textContent = window.csvData[index]['Nozzle'] || '';
         cells[24].textContent = window.csvData[index]['TrayHeight'] || '';
-        cells[25].textContent = window.csvData[index]['Offset Num'] || '';
+        cells[25].textContent = window.csvData[index]['Offset_Num'] || '';
         
         // *** แก้ไขส่วนนี้ - สร้างปุ่มสำหรับ Offset XY ***
         const offsetXY = window.csvData[index]['Offset XY'] || '';
@@ -1205,6 +1206,7 @@ function inserttable() {
         
         cells[27].textContent = window.csvData[index]['Point'] || '';
         cells[28].textContent = window.csvData[index]['Board'] || '';
+        cells[29].textContent = window.csvData[index]['Mount Comments'] || '';
 
         cells.forEach(function(cell) {
             if (cell.textContent && cell.textContent.toLowerCase().includes(searchInput)) {
