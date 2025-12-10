@@ -1197,6 +1197,73 @@ function showExcelFilterMenu(columnIndex, headerCell, filterBtn) {
             ✕ Clear All
         </button>
     `;
+
+    // Sort buttons
+    const sortButtons = document.createElement('div');
+    sortButtons.style.cssText = `
+        padding: 8px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        gap: 8px;
+    `;
+    sortButtons.innerHTML = `
+        <button onclick="sortFilterValues('asc')" style="
+            flex: 1;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">
+            🔼 A-Z
+        </button>
+        <button onclick="sortFilterValues('desc')" style="
+            flex: 1;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">
+            🔽 Z-A
+        </button>
+        <button onclick="sortFilterValues('numAsc')" style="
+            flex: 1;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">
+            🔼 น้อย-มาก
+        </button>
+        <button onclick="sortFilterValues('numDesc')" style="
+            flex: 1;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">
+            🔽 มาก-น้อย
+        </button>
+    `;
     
     // Values list
     const valuesList = document.createElement('div');
@@ -1282,9 +1349,11 @@ function showExcelFilterMenu(columnIndex, headerCell, filterBtn) {
     `;
     
     // ประกอบเมนู
+     // ประกอบเมนู
     menu.appendChild(menuHeader);
     menu.appendChild(searchBox);
     menu.appendChild(actionButtons);
+    menu.appendChild(sortButtons);  // <-- เพิ่มบรรทัดนี้
     menu.appendChild(valuesList);
     menu.appendChild(applyButton);
     
@@ -1312,14 +1381,53 @@ function showExcelFilterMenu(columnIndex, headerCell, filterBtn) {
 }
 
 // กรองรายการค่าตาม search
-function filterExcelValues(searchTerm) {
-    const labels = document.querySelectorAll('#excelFilterValues label');
-    searchTerm = searchTerm.toLowerCase();
+// Sort filter values
+function sortFilterValues(sortType) {
+    const valuesList = document.getElementById('excelFilterValues');
+    const labels = Array.from(valuesList.querySelectorAll('label'));
     
-    labels.forEach(label => {
-        const text = label.textContent.toLowerCase();
-        label.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+    labels.sort((a, b) => {
+        const textA = a.querySelector('span').textContent.trim();
+        const textB = b.querySelector('span').textContent.trim();
+        
+        switch(sortType) {
+            case 'asc': // A-Z
+                return textA.localeCompare(textB, 'th');
+            
+            case 'desc': // Z-A
+                return textB.localeCompare(textA, 'th');
+            
+            case 'numAsc': // น้อย-มาก
+                const numA = parseFloat(textA.replace(/[^0-9.-]/g, ''));
+                const numB = parseFloat(textB.replace(/[^0-9.-]/g, ''));
+                
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return numA - numB;
+                }
+                if (!isNaN(numA)) return -1;
+                if (!isNaN(numB)) return 1;
+                return textA.localeCompare(textB, 'th');
+            
+            case 'numDesc': // มาก-น้อย
+                const numA2 = parseFloat(textA.replace(/[^0-9.-]/g, ''));
+                const numB2 = parseFloat(textB.replace(/[^0-9.-]/g, ''));
+                
+                if (!isNaN(numA2) && !isNaN(numB2)) {
+                    return numB2 - numA2;
+                }
+                if (!isNaN(numA2)) return -1;
+                if (!isNaN(numB2)) return 1;
+                return textB.localeCompare(textA, 'th');
+            
+            default:
+                return 0;
+        }
     });
+    
+    valuesList.innerHTML = '';
+    labels.forEach(label => valuesList.appendChild(label));
+    
+    showToast(`Sorted: ${sortType === 'asc' ? 'A-Z' : sortType === 'desc' ? 'Z-A' : sortType === 'numAsc' ? 'น้อย-มาก' : 'มาก-น้อย'}`, 'info');
 }
 
 // Select All - FIXED
