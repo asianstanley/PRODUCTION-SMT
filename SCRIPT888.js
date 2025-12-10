@@ -514,10 +514,33 @@ function fetchCSV() {
   fetch(csvUrl)
     .then(res => res.text())
     .then(data => {
-      console.log(data);  // CSV text จะอยู่ตรงนี้
-      processData(data);
+      const lines = data.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      const csvData = lines.slice(1)
+        .filter(line => line.trim())
+        .map(line => {
+          const values = line.split(',');
+          const obj = {};
+          headers.forEach((header, idx) => {
+            obj[header] = values[idx]?.trim() || '';
+          });
+          return obj;
+        });
+      
+      window.csvData = csvData;
+      window.csvHeaders = headers;
+      
+      const statusElement = document.getElementById('status');
+      if (statusElement) {
+        statusElement.textContent = `อัพโหลดไฟล์สำเร็จ! โหลดข้อมูล ${csvData.length} แถว`;
+        statusElement.style.color = 'green';
+        setTimeout(() => statusElement.textContent = '', 3000);
+      }
+      
+      console.log('CSV loaded:', csvData.length, 'rows');
     })
-    .catch(err => console.error(err));
+    .catch(err => console.error('Error:', err));
 }
 
 // ตัวเลือก 2: แสดงข้อความใน element บนหน้าเว็บ
