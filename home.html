@@ -401,8 +401,8 @@
     }
 
     .animate-fade-in {
-      animation: fadeInUp 0.6s ease-out;
       -webkit-animation: fadeInUp 0.6s ease-out;
+      animation: fadeInUp 0.6s ease-out;
     }
 
     /* Labels */
@@ -436,21 +436,24 @@
     }
 
     /* Safari specific fixes */
-      @media screen and (-webkit-min-device-pixel-ratio: 0) {
-        .form-control {
-          -webkit-appearance: none;
-        }
-        
-        .btn {
-          -webkit-appearance: none;
-          -webkit-border-radius: 10px;
-        }
-        
-        .card-modern {
-          -webkit-transform: translateZ(0);
-        }
+    @media screen and (-webkit-min-device-pixel-ratio: 0) {
+      .form-control {
+        -webkit-appearance: none;
+        appearance: none;
       }
-
+      
+      .btn {
+        -webkit-appearance: none;
+        appearance: none;
+        -webkit-border-radius: 10px;
+        border-radius: 10px;
+      }
+      
+      .card-modern {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+      }
+    }
     /* Mobile Responsive Design */
     @media (max-width: 768px) {
       /* Adjust main container for mobile */
@@ -876,6 +879,7 @@
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@1.16.1/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <!-- External Script - Make sure this file exists -->
   <script src="SCRIPT888.js"></script>
 
