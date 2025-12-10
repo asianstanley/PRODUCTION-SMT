@@ -543,6 +543,8 @@ function fetchCSV() {
     .catch(err => console.error('Error:', err));
 }
 
+
+
 // ตัวเลือก 2: แสดงข้อความใน element บนหน้าเว็บ
 function processDataWithStatus(csvDataText) {
     console.log('=== Processing CSV ===');
@@ -1426,6 +1428,7 @@ function clearAll() {
 }
 
 // Show success message
+// แก้ไขฟังก์ชัน showSuccessMessage - ลบ onclick ที่อาจทำให้รีโหลด
 function showSuccessMessage(message) {
     const toast = document.createElement('div');
     toast.style.cssText = `
@@ -1441,25 +1444,34 @@ function showSuccessMessage(message) {
         font-weight: 500;
         transform: translateX(100%);
         transition: transform 0.3s ease;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 14px;
+        pointer-events: none; // ป้องกันการคลิก
     `;
-    toast.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}`;
+    toast.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${message}`;
+    
+    // เอา onclick ออกทั้งหมด
+    toast.onclick = null;
     
     document.body.appendChild(toast);
     
+    // Animation เข้า
     setTimeout(() => {
         toast.style.transform = 'translateX(0)';
     }, 100);
     
+    // Auto remove หลัง 3 วินาที
     setTimeout(() => {
         toast.style.transform = 'translateX(100%)';
         setTimeout(() => {
-            if (document.body.contains(toast)) {
-                document.body.removeChild(toast);
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
             }
         }, 300);
     }, 3000);
+    
+    return toast;
 }
-
 // Menu toggle function
 function toggleMenu() {
     const menu = document.getElementById('menuPopup');
