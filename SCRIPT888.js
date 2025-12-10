@@ -982,7 +982,509 @@ function copyOffsetData() {
     document.body.removeChild(textarea);
 }
 ///-------------------+++++++++++++++++++
- 
+ // ========================================
+// EXCEL-STYLE TABLE FILTER SYSTEM
+// ========================================
+
+// เรียกใช้หลังจากแสดงตารางเสร็จ
+function initExcelStyleFilters() {
+    const table = document.getElementById('resultsTable');
+    if (!table) return;
+    
+    const thead = table.querySelector('thead');
+    const headerRow = thead.querySelector('tr');
+    const headers = headerRow.querySelectorAll('th');
+    
+    // เพิ่มปุ่ม filter ในทุก header
+    headers.forEach((th, columnIndex) => {
+        // ข้ามถ้ามีปุ่มแล้ว
+        if (th.querySelector('.excel-filter-btn')) return;
+        
+        // Wrap เนื้อหาเดิม
+        const originalContent = th.innerHTML;
+        th.innerHTML = '';
+        
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 8px;';
+        
+        const textSpan = document.createElement('span');
+        textSpan.innerHTML = originalContent;
+        textSpan.style.flex = '1';
+        
+        const filterBtn = document.createElement('button');
+        filterBtn.className = 'excel-filter-btn';
+        filterBtn.innerHTML = '▼';
+        filterBtn.style.cssText = `
+            background: transparent;
+            border: none;
+            color: #666;
+            font-size: 10px;
+            cursor: pointer;
+            padding: 4px;
+            opacity: 0.6;
+            transition: all 0.2s;
+        `;
+        
+        filterBtn.onmouseover = () => {
+            filterBtn.style.opacity = '1';
+            filterBtn.style.color = '#667eea';
+        };
+        
+        filterBtn.onmouseout = () => {
+            filterBtn.style.opacity = '0.6';
+            filterBtn.style.color = '#666';
+        };
+        
+        filterBtn.onclick = (e) => {
+            e.stopPropagation();
+            showExcelFilterMenu(columnIndex, th, filterBtn);
+        };
+        
+        wrapper.appendChild(textSpan);
+        wrapper.appendChild(filterBtn);
+        th.appendChild(wrapper);
+        
+        // เก็บสถานะ filter
+        th.setAttribute('data-column-index', columnIndex);
+    });
+}
+
+// แสดงเมนู filter แบบ Excel
+let activeFilterMenu = null;
+let columnFilters = {}; // เก็บ filter ของแต่ละคอลัมน์
+
+function showExcelFilterMenu(columnIndex, headerCell, filterBtn) {
+    // ปิดเมนูเก่า
+    if (activeFilterMenu) {
+        closeExcelFilterMenu();
+    }
+    
+    const table = document.getElementById('resultsTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // ดึงค่าทั้งหมดในคอลัมน์
+    const values = new Map(); // ใช้ Map เก็บค่าและจำนวน
+    rows.forEach(row => {
+        if (row.style.display === 'none') return; // ข้ามแถวที่ถูกซ่อน
+        
+        const cell = row.cells[columnIndex];
+        if (cell) {
+            let value = cell.textContent.trim();
+            
+            // กรณี Offset XY (มีปุ่ม View)
+            if (cell.querySelector('.btn-view-offset')) {
+                value = 'View Offset';
+            }
+            
+            if (value) {
+                values.set(value, (values.get(value) || 0) + 1);
+            }
+        }
+    });
+    
+    // Sort ตามตัวอักษร
+    const sortedValues = Array.from(values.entries()).sort((a, b) => {
+        return a[0].localeCompare(b[0], 'th');
+    });
+    
+    // สร้าง filter menu
+    const menu = document.createElement('div');
+    menu.className = 'excel-filter-menu';
+    menu.style.cssText = `
+        position: absolute;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        min-width: 280px;
+        max-width: 400px;
+        max-height: 500px;
+        z-index: 10001;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    `;
+    
+    // คำนวณตำแหน่ง
+    const rect = headerCell.getBoundingClientRect();
+    menu.style.top = (rect.bottom + window.scrollY + 2) + 'px';
+    menu.style.left = (rect.left + window.scrollX) + 'px';
+    
+    // Header ของเมนู
+    const menuHeader = document.createElement('div');
+    menuHeader.style.cssText = `
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #f9fafb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    `;
+    menuHeader.innerHTML = `
+        <span style="font-weight: 600; color: #374151; font-size: 13px;">Filter Options</span>
+        <button onclick="closeExcelFilterMenu()" style="
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+        ">×</button>
+    `;
+    
+    // Search box
+    const searchBox = document.createElement('div');
+    searchBox.style.cssText = 'padding: 12px 16px; border-bottom: 1px solid #e5e7eb;';
+    searchBox.innerHTML = `
+        <input 
+            type="text" 
+            id="excelFilterSearch" 
+            placeholder="🔍 Search..." 
+            style="
+                width: 100%;
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 13px;
+                outline: none;
+                transition: border-color 0.2s;
+            "
+            onfocus="this.style.borderColor='#667eea'"
+            onblur="this.style.borderColor='#d1d5db'"
+        >
+    `;
+    
+    // Select All / Clear All
+    const actionButtons = document.createElement('div');
+    actionButtons.style.cssText = `
+        padding: 8px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        gap: 8px;
+    `;
+    actionButtons.innerHTML = `
+        <button onclick="excelFilterSelectAll(${columnIndex})" style="
+            flex: 1;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">
+            ✓ Select All
+        </button>
+        <button onclick="excelFilterClearAll(${columnIndex})" style="
+            flex: 1;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">
+            ✕ Clear All
+        </button>
+    `;
+    
+    // Values list
+    const valuesList = document.createElement('div');
+    valuesList.id = 'excelFilterValues';
+    valuesList.style.cssText = `
+        overflow-y: auto;
+        max-height: 300px;
+        padding: 8px 0;
+    `;
+    
+    // สร้างรายการค่า
+    const currentFilter = columnFilters[columnIndex] || new Set();
+    const isAllSelected = currentFilter.size === 0;
+    
+    sortedValues.forEach(([value, count]) => {
+        const isChecked = isAllSelected || currentFilter.has(value);
+        
+        const item = document.createElement('label');
+        item.style.cssText = `
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 13px;
+            color: #374151;
+        `;
+        item.onmouseover = () => item.style.background = '#f3f4f6';
+        item.onmouseout = () => item.style.background = 'white';
+        
+        item.innerHTML = `
+            <input 
+                type="checkbox" 
+                class="excel-filter-checkbox" 
+                value="${value.replace(/"/g, '&quot;')}" 
+                ${isChecked ? 'checked' : ''}
+                style="
+                    margin-right: 10px;
+                    width: 16px;
+                    height: 16px;
+                    cursor: pointer;
+                    accent-color: #667eea;
+                "
+            >
+            <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${value}
+            </span>
+            <span style="
+                color: #9ca3af;
+                font-size: 11px;
+                margin-left: 8px;
+                background: #f3f4f6;
+                padding: 2px 8px;
+                border-radius: 10px;
+            ">${count}</span>
+        `;
+        
+        valuesList.appendChild(item);
+    });
+    
+    // Apply button
+    const applyButton = document.createElement('div');
+    applyButton.style.cssText = `
+        padding: 12px 16px;
+        border-top: 1px solid #e5e7eb;
+        background: #f9fafb;
+    `;
+    applyButton.innerHTML = `
+        <button onclick="applyExcelFilter(${columnIndex})" style="
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            Apply Filter
+        </button>
+    `;
+    
+    // ประกอบเมนู
+    menu.appendChild(menuHeader);
+    menu.appendChild(searchBox);
+    menu.appendChild(actionButtons);
+    menu.appendChild(valuesList);
+    menu.appendChild(applyButton);
+    
+    document.body.appendChild(menu);
+    activeFilterMenu = { menu, columnIndex };
+    
+    // Focus search box
+    setTimeout(() => {
+        const searchInput = document.getElementById('excelFilterSearch');
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.addEventListener('input', function() {
+                filterExcelValues(this.value);
+            });
+        }
+    }, 100);
+    
+    // ปิดเมื่อคลิกข้างนอก
+    setTimeout(() => {
+        document.addEventListener('click', excelFilterOutsideClick);
+    }, 100);
+    
+    // อัพเดทไอคอนถ้ามี filter
+    updateFilterIcon(columnIndex, filterBtn);
+}
+
+// กรองรายการค่าตาม search
+function filterExcelValues(searchTerm) {
+    const labels = document.querySelectorAll('#excelFilterValues label');
+    searchTerm = searchTerm.toLowerCase();
+    
+    labels.forEach(label => {
+        const text = label.textContent.toLowerCase();
+        label.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+    });
+}
+
+// Select All - FIXED
+function excelFilterSelectAll(columnIndex) {
+    const checkboxes = document.querySelectorAll('#excelFilterValues .excel-filter-checkbox');
+    checkboxes.forEach(cb => {
+        if (cb.parentElement.style.display !== 'none') {
+            cb.checked = true;
+        }
+    });
+    showToast('Selected all visible items', 'info');
+}
+
+// Clear All - FIXED  
+function excelFilterClearAll(columnIndex) {
+    const checkboxes = document.querySelectorAll('#excelFilterValues .excel-filter-checkbox');
+    checkboxes.forEach(cb => {
+        if (cb.parentElement.style.display !== 'none') {
+            cb.checked = false;
+        }
+    });
+    showToast('Cleared all visible items', 'info');
+}
+
+
+// Apply Filter - FIXED
+function applyExcelFilter(columnIndex) {
+    const checkboxes = document.querySelectorAll('#excelFilterValues .excel-filter-checkbox');
+    const allCheckboxes = document.querySelectorAll('#excelFilterValues .excel-filter-checkbox');
+    const selectedValues = new Set();
+    
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            selectedValues.add(cb.value);
+        }
+    });
+    
+    const allSelected = selectedValues.size === allCheckboxes.length;
+    
+    if (selectedValues.size === 0 || allSelected) {
+        delete columnFilters[columnIndex];
+        showToast(`Filter cleared - showing all values`, 'info');
+    } else {
+        columnFilters[columnIndex] = selectedValues;
+        showToast(`Filter applied: ${selectedValues.size} values selected`, 'success');
+    }
+    
+    applyAllExcelFilters();
+    closeExcelFilterMenu();
+}
+
+// Apply ทุก filter ที่ active - FIXED
+function applyAllExcelFilters() {
+    const table = document.getElementById('resultsTable');
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    
+    let visibleCount = 0;
+    const hasActiveFilters = Object.keys(columnFilters).length > 0;
+    
+    rows.forEach(row => {
+        let showRow = true;
+        
+        if (!hasActiveFilters) {
+            showRow = true;
+        } else {
+            for (const [columnIndex, allowedValues] of Object.entries(columnFilters)) {
+                const cell = row.cells[columnIndex];
+                if (!cell) {
+                    showRow = false;
+                    break;
+                }
+                
+                let cellValue = cell.textContent.trim();
+                
+                if (cell.querySelector('.btn-view-offset')) {
+                    cellValue = 'View Offset';
+                }
+                
+                if (!allowedValues.has(cellValue)) {
+                    showRow = false;
+                    break;
+                }
+            }
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+        if (showRow) visibleCount++;
+    });
+    
+    updateAllFilterIcons();
+    
+    console.log(`Showing ${visibleCount} of ${rows.length} rows (${Object.keys(columnFilters).length} active filters)`);
+}
+
+
+
+// อัพเดทไอคอน filter
+function updateFilterIcon(columnIndex, filterBtn) {
+    if (!filterBtn) {
+        const table = document.getElementById('resultsTable');
+        const headers = table.querySelectorAll('thead th');
+        const header = headers[columnIndex];
+        if (header) {
+            filterBtn = header.querySelector('.excel-filter-btn');
+        }
+    }
+    
+    if (!filterBtn) return;
+    
+    if (columnFilters[columnIndex]) {
+        filterBtn.style.color = '#667eea';
+        filterBtn.style.fontWeight = 'bold';
+        filterBtn.innerHTML = '▼';
+    } else {
+        filterBtn.style.color = '#666';
+        filterBtn.style.fontWeight = 'normal';
+        filterBtn.innerHTML = '▼';
+    }
+}
+
+// อัพเดทไอคอนทุกคอลัมน์
+function updateAllFilterIcons() {
+    const table = document.getElementById('resultsTable');
+    const headers = table.querySelectorAll('thead th');
+    
+    headers.forEach((header, index) => {
+        const filterBtn = header.querySelector('.excel-filter-btn');
+        if (filterBtn) {
+            updateFilterIcon(index, filterBtn);
+        }
+    });
+}
+
+// ปิดเมนู
+function closeExcelFilterMenu() {
+    if (activeFilterMenu) {
+        document.removeEventListener('click', excelFilterOutsideClick);
+        if (activeFilterMenu.menu.parentNode) {
+            activeFilterMenu.menu.remove();
+        }
+        activeFilterMenu = null;
+    }
+}
+
+// คลิกข้างนอก
+function excelFilterOutsideClick(e) {
+    if (activeFilterMenu && 
+        !activeFilterMenu.menu.contains(e.target) &&
+        !e.target.classList.contains('excel-filter-btn')) {
+        closeExcelFilterMenu();
+    }
+}
+
+// Clear filter ทั้งหมด
+function clearAllExcelFilters() {
+    columnFilters = {};
+    applyAllExcelFilters();
+    showToast('All filters cleared', 'info');
+}
+
+// ========================================
+// แก้ไขฟังก์ชัน searchICSCode ให้เรียก initExcelStyleFilters
+// ========================================
+
 
 //+-----------------------++++++++++++++++++
 
@@ -996,9 +1498,6 @@ function searchICSCode() {
     const resultsTableBody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
     
     console.log('Search term:', searchInput);
-
-
-    
     
     // Clear previous results
     resultsList.innerHTML = '';
@@ -1044,8 +1543,6 @@ function searchICSCode() {
             }
         }
     }
-
-    
     
     console.log('Total matches found:', foundIndexes.length);
     
@@ -1108,7 +1605,7 @@ function searchICSCode() {
             cells[24].textContent = window.csvData[index]['TrayHeight'] || '';
             cells[25].textContent = window.csvData[index]['Offset_Num'] || '';
             
-            // *** แก้ไขส่วนนี้ - สร้างปุ่มสำหรับ Offset XY ***
+            // Offset XY with View button
             const offsetXY = window.csvData[index]['Offset XY'] || '';
             const viewBtn = document.createElement('button');
             viewBtn.className = 'btn-view-offset';
@@ -1134,6 +1631,11 @@ function searchICSCode() {
         
         console.log('Search completed successfully');
         showSuccessMessage(`พบข้อมูล ${foundIndexes.length} รายการ`);
+        
+        // ⭐ เพิ่มบรรทัดนี้เพื่อเปิดใช้งาน Excel-style filters
+        setTimeout(() => {
+            initExcelStyleFilters();
+        }, 100);
         
     } else {
         console.log('No matching data found');
