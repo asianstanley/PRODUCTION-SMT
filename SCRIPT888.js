@@ -508,173 +508,173 @@ function enableTableFilters() {
 }
 
 //---------------------------------
+// ใช้ Papa Parse แทน - แก้ปัญหา comma ใน data
 function fetchCSV() {
   const csvUrl = 'https://media.githubusercontent.com/media/asianstanley/PRODUCTION-SMT/refs/heads/main/TABLE.csv';
-
-  fetch(csvUrl)
-    .then(res => res.text())
-    .then(data => {
-      const lines = data.trim().split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
+  
+  showLoadingPopup();
+  
+  Papa.parse(csvUrl, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    worker: true,
+    fastMode: false, // ต้องเป็น false เพื่อรองรับ quotes
+    complete: function(results) {
+      window.csvData = results.data;
+      window.csvHeaders = results.meta.fields;
       
-      const csvData = lines.slice(1)
-        .filter(line => line.trim())
-        .map(line => {
-          const values = line.split(',');
-          const obj = {};
-          headers.forEach((header, idx) => {
-            obj[header] = values[idx]?.trim() || '';
-          });
-          return obj;
-        });
-      
-      window.csvData = csvData;
-      window.csvHeaders = headers;
+      csvData = results.data;
+      csvHeaders = results.meta.fields;
       
       const statusElement = document.getElementById('status');
       if (statusElement) {
-        statusElement.textContent = `อัพโหลดไฟล์สำเร็จ! โหลดข้อมูล ${csvData.length} แถว`;
+        statusElement.textContent = `อัพโหลดไฟล์สำเร็จ! โหลดข้อมูล ${results.data.length} แถว`;
         statusElement.style.color = 'green';
         setTimeout(() => statusElement.textContent = '', 3000);
       }
       
-      console.log('CSV loaded:', csvData.length, 'rows');
-    })
-    .catch(err => console.error('Error:', err));
+      console.log('CSV loaded:', results.data.length, 'rows');
+      console.log('Headers:', results.meta.fields);
+      console.log('Sample data:', results.data[0]);
+      
+      showSuccessPopup(results.data.length);
+    },
+    error: function(err) {
+      console.error('Error:', err);
+      showErrorPopup();
+    }
+  });
 }
 
+// แก้ไข processData ให้ใช้ Papa Parse
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('csvFile');
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-
-// ตัวเลือก 2: แสดงข้อความใน element บนหน้าเว็บ
-function processDataWithStatus(csvDataText) {
-    console.log('=== Processing CSV ===');
+        showLoadingPopup();
         
-    const lines = csvDataText.split('\n');
-    const data = [];
-    const headers = lines[0].split(',');
-        
-    console.log('Headers found:', headers);
-        
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',');
-        if (values.length === headers.length) {
-            const entry = {};
-            for (let j = 0; j < headers.length; j++) {
-                entry[headers[j].trim()] = values[j].trim();
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                window.csvData = results.data;
+                window.csvHeaders = results.meta.fields;
+                
+                csvData = results.data;
+                csvHeaders = results.meta.fields;
+                
+                console.log('CSV loaded successfully:', results.data.length, 'rows');
+                console.log('Headers:', results.meta.fields);
+                console.log('Sample data:', results.data[0]);
+                
+                showSuccessPopup(results.data.length);
+            },
+            error: function(err) {
+                console.error('Error:', err);
+                showErrorPopup();
             }
-            data.push(entry);
-        }
-    }
-        
-    csvData = data;
-    csvHeaders = headers;
-    window.csvData = data;
-    window.csvHeaders = headers;
-        
-    console.log('CSV loaded successfully:', data.length, 'rows');
-    console.log('Sample data:', data[0]);
+        });
+    });
     
-    // แสดงใน status element (ต้องมี element ที่มี id="status" ในหน้าเว็บ)
-    const statusElement = document.getElementById('status');
-    if (statusElement) {
-        statusElement.textContent = `อัพโหลดไฟล์สำเร็จ! โหลดข้อมูล ${data.length} แถว`;
-        statusElement.style.color = 'green';
-        
-        // ซ่อนข้อความหลังจาก 3 วินาที
-        setTimeout(() => {
-            statusElement.textContent = '';
-        }, 3000);
-    }
+    // Add enter key support for search
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchICSCode();
+        }
+    });
+});
+
+// เพิ่มฟังก์ชัน popup (ถ้ายังไม่มี)
+function showLoadingPopup() {
+  const popup = document.createElement('div');
+  popup.id = 'csv-loading-popup';
+  popup.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px 50px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 10000;
+    text-align: center;
+    font-family: Arial, sans-serif;
+  `;
+  popup.innerHTML = '<div style="font-size: 18px; color: #333;">⏳ กำลังโหลดข้อมูล...</div>';
+  document.body.appendChild(popup);
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'csv-overlay';
+  overlay.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 9999;
+  `;
+  document.body.appendChild(overlay);
 }
 
-// ตัวเลือก 3: สร้าง Toast Notification (แจ้งเตือนชั่วคราว)
-function processDataWithToast(csvDataText) {
-    console.log('=== Processing CSV ===');
-        
-    const lines = csvDataText.split('\n');
-    const data = [];
-    const headers = lines[0].split(',');
-        
-    console.log('Headers found:', headers);
-        
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',');
-        if (values.length === headers.length) {
-            const entry = {};
-            for (let j = 0; j < headers.length; j++) {
-                entry[headers[j].trim()] = values[j].trim();
-            }
-            data.push(entry);
-        }
-    }
-        
-    csvData = data;
-    csvHeaders = headers;
-    window.csvData = data;
-    window.csvHeaders = headers;
-        
-    console.log('CSV loaded successfully:', data.length, 'rows');
-    console.log('Sample data:', data[0]);
-    
-    // สร้าง Toast notification
-    showToast(`อัพโหลดไฟล์สำเร็จ! โหลดข้อมูล ${data.length} แถว`);
+function showSuccessPopup(rowCount) {
+  const loadingPopup = document.getElementById('csv-loading-popup');
+  if (loadingPopup) loadingPopup.remove();
+  
+  const popup = document.createElement('div');
+  popup.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 40px 60px;
+    border-radius: 15px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+    z-index: 10000;
+    text-align: center;
+    font-family: Arial, sans-serif;
+  `;
+  popup.innerHTML = `
+    <div style="font-size: 50px; margin-bottom: 15px;">✅</div>
+    <div style="font-size: 24px; color: #28a745; font-weight: bold; margin-bottom: 10px;">
+      พร้อมใช้งานแล้ว!
+    </div>
+    <div style="font-size: 16px; color: #666;">
+      โหลดข้อมูล ${rowCount.toLocaleString()} แถวสำเร็จ
+    </div>
+  `;
+  document.body.appendChild(popup);
+  
+  setTimeout(() => {
+    popup.remove();
+    const overlay = document.getElementById('csv-overlay');
+    if (overlay) overlay.remove();
+  }, 2000);
 }
-// ฟังก์ชันหลักสำหรับ process CSV data
-// ฟังก์ชันหลักสำหรับ process CSV data
-function processData(csvDataText) {
-    console.log('=== Processing CSV ===');
-    
-    // ลบ BOM ถ้ามี
-    csvDataText = csvDataText.replace(/^\uFEFF/, '');
-    
-    // Parse CSV อย่างถูกต้อง (รองรับ comma ใน quotes)
-    const lines = parseCSVLines(csvDataText);
-    
-    if (lines.length === 0) {
-        showToast('ไฟล์ CSV ว่างเปล่า', 'error');
-        return;
-    }
-    
-    const data = [];
-    const headers = lines[0].map(h => h.trim());
-    
-    console.log('Headers found:', headers);
-    console.log('Number of columns:', headers.length);
-    
-    // ตรวจสอบว่ามี headers หรือไม่
-    if (headers.length === 0 || (headers.length === 1 && headers[0] === '')) {
-        showToast('ไม่พบ headers ในไฟล์ CSV', 'error');
-        console.error('No valid headers found');
-        return;
-    }
-    
-    // Parse data rows
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i];
-        
-        // ข้ามแถวว่าง
-        if (values.length === 1 && values[0].trim() === '') {
-            continue;
-        }
-        
-        const entry = {};
-        for (let j = 0; j < headers.length; j++) {
-            entry[headers[j]] = values[j] ? values[j].trim() : '';
-        }
-        data.push(entry);
-    }
-    
-    csvData = data;
-    csvHeaders = headers;
-    window.csvData = data;
-    window.csvHeaders = headers;
-    
-    console.log('CSV loaded successfully:', data.length, 'rows');
-    console.log('First 3 headers:', headers.slice(0, 3));
-    console.log('Sample data:', data[0]);
-    
-    // แสดง Toast แทน alert
-    showToast(`อัพโหลดไฟล์สำเร็จ! โหลดข้อมูล ${data.length} แถว (${headers.length} คอลัมน์)`, 'success');
+
+function showErrorPopup() {
+  const loadingPopup = document.getElementById('csv-loading-popup');
+  if (loadingPopup) loadingPopup.remove();
+  
+  const popup = document.createElement('div');
+  popup.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: white; padding: 40px 60px; border-radius: 15px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.3); z-index: 10000;
+    text-align: center; font-family: Arial, sans-serif;
+  `;
+  popup.innerHTML = `
+    <div style="font-size: 50px; margin-bottom: 15px;">❌</div>
+    <div style="font-size: 24px; color: #dc3545; font-weight: bold;">เกิดข้อผิดพลาด!</div>
+  `;
+  document.body.appendChild(popup);
+  
+  setTimeout(() => {
+    popup.remove();
+    const overlay = document.getElementById('csv-overlay');
+    if (overlay) overlay.remove();
+  }, 3000);
 }
 
 // ฟังก์ชัน parse CSV ที่รองรับ comma ใน quotes
@@ -1428,7 +1428,6 @@ function clearAll() {
 }
 
 // Show success message
-// แก้ไขฟังก์ชัน showSuccessMessage - ลบ onclick ที่อาจทำให้รีโหลด
 function showSuccessMessage(message) {
     const toast = document.createElement('div');
     toast.style.cssText = `
@@ -1444,34 +1443,25 @@ function showSuccessMessage(message) {
         font-weight: 500;
         transform: translateX(100%);
         transition: transform 0.3s ease;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 14px;
-        pointer-events: none; // ป้องกันการคลิก
     `;
-    toast.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${message}`;
-    
-    // เอา onclick ออกทั้งหมด
-    toast.onclick = null;
+    toast.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}`;
     
     document.body.appendChild(toast);
     
-    // Animation เข้า
     setTimeout(() => {
         toast.style.transform = 'translateX(0)';
     }, 100);
     
-    // Auto remove หลัง 3 วินาที
     setTimeout(() => {
         toast.style.transform = 'translateX(100%)';
         setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
             }
         }, 300);
     }, 3000);
-    
-    return toast;
 }
+
 // Menu toggle function
 function toggleMenu() {
     const menu = document.getElementById('menuPopup');
