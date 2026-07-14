@@ -1712,6 +1712,11 @@ function searchICSCode() {
             cells[23].textContent = window.csvData[index]['Nozzle'] || '';
             cells[24].textContent = window.csvData[index]['TrayHeight'] || '';
             cells[25].textContent = window.csvData[index]['Offset_Num'] || '';
+            cells[26].textContent = window.csvData[index]['Size X'] || '';  // หรือชื่อคอลัมน์จริงใน CSV
+            cells[27].textContent = window.csvData[index]['Size Y'] || '';
+            cells[28].textContent = window.csvData[index]['Size Z'] || '';  
+
+
             
             // Offset XY with View button
             const offsetXY = window.csvData[index]['Offset XY'] || '';
@@ -1827,6 +1832,10 @@ function inserttable() {
         cells[23].textContent = window.csvData[index]['Nozzle'] || '';
         cells[24].textContent = window.csvData[index]['TrayHeight'] || '';
         cells[25].textContent = window.csvData[index]['Offset_Num'] || '';
+        cells[26].textContent = window.csvData[index]['Size X'] || '';
+        cells[27].textContent = window.csvData[index]['Size Y'] || '';
+        cells[28].textContent = window.csvData[index]['Size Z'] || '';
+
         
         // *** แก้ไขส่วนนี้ - สร้างปุ่มสำหรับ Offset XY ***
         const offsetXY = window.csvData[index]['Offset XY'] || '';
